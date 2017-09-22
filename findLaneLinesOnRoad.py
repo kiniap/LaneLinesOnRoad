@@ -99,10 +99,10 @@ def draw_lines(img, lines, color=[255, 0, 0], thickness=5):
     Extract the left lane line points and draw it on the image
     """
     # Parameters
-    slope_threshold = 0.2 # slopes below which to reject the lines (too flat to be a lane line)
+    slope_threshold = 0.5 # slopes below which to reject the lines (too flat to be a lane line)
     n=2 # order of polynomial to fit through the points
         
-    left_line_points = lines[slopes<slope_threshold,:]
+    left_line_points = lines[slopes<(-slope_threshold),:]
     left_line_points = np.vstack((left_line_points[:,[0,1]], left_line_points[:,[2,3]]))
     #left_slopes = slopes[slopes<slope_threshold]
     #print(np.mean(left_slopes))
@@ -112,18 +112,18 @@ def draw_lines(img, lines, color=[255, 0, 0], thickness=5):
     left_max = np.amax(left_line_points, axis=0)
 
     # Fit an nth order polynomial curve through the left line points
-
     left_line_poly = poly.polyfit(left_line_points[:,1], left_line_points[:,0], n) # get the coeffs of the poly
     left_line_fit = poly.polyval(left_line_points[:,1], left_line_poly) # x= f(y), where y is the existing left line point_y
     left_line_fit = left_line_fit.reshape(left_line_fit.shape[0],1)# reshape to 1d vector
     left_line_fit = (np.flip(left_line_fit,0)).astype(int) #flip to line up with the left line points and covert to int to be able draw on the image
     left_line_fit = np.hstack((left_line_fit[:,[0]],left_line_points[:,[1]])) # [x_fit,y_line]
     
-    # Get intercept of left line with bottom of image
+    # Get intercept of left line with bottom of image and left_min(y)
     left_line_bottom_x = int(poly.polyval(img.shape[0], left_line_poly))
+    left_line_top_x = int(poly.polyval(left_min[1],left_line_poly))
         
     # Draw left line
-    cv2.line(img, (left_line_bottom_x, img.shape[0]), (left_max[0], left_min[1]), color, thickness)
+    cv2.line(img, (left_line_bottom_x, img.shape[0]), (left_line_top_x, left_min[1]), color, thickness)
        
     """
     Extract the right lane line points and draw it on the image
@@ -140,11 +140,10 @@ def draw_lines(img, lines, color=[255, 0, 0], thickness=5):
     
     # Get intercept of left line with bottom of image
     right_line_bottom_x = int(poly.polyval(img.shape[0], right_line_poly))
-    
-    
+    right_line_top_x = int(poly.polyval(right_min[1], right_line_poly))
     # Draw right line
     #cv2.line(img, (right_min[0], right_min[1]), (right_max[0], right_max[1]), color, thickness)
-    cv2.line(img, (right_line_bottom_x, img.shape[0]), (right_min[0], right_min[1]), color, thickness)            
+    cv2.line(img, (right_line_bottom_x, img.shape[0]), (right_line_top_x, right_min[1]), color, thickness)            
 
 
 def hough_lines(img, rho, theta, threshold, min_line_len, max_line_gap):
@@ -294,4 +293,14 @@ if __name__ == '__main__':
         </video>
         """.format(yellow_output))
         
+    """
+    Process clip3
+    """
+    process_clip3=False
+    if process_clip3:
+        clip3 = VideoFileClip('test_videos/challenge.mp4')
+        challenge_output = 'test_videos_output/challenge.mp4'
+        challenge_clip = clip3.fl_image(process_image) #NOTE: this function expects color images!!    
+        challenge_clip.write_videofile(challenge_output, audio=False)
+
         
