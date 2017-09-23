@@ -262,18 +262,22 @@ Read in a video clip of a dash mounted camera and identify the edges of the lane
 if __name__ == '__main__':
     
     """
-    Select test images to find lane lines on
+    Select test images to find lane lines by setting a value from 0-1
     Display the image with the lane lines overlayed on top
     """
+    i=0
     list_of_images = os.listdir("test_images")
-    image_select = list_of_images[0]
-    image = mpimg.imread("./test_images/" + image_select)
-
-    image_with_lane_lines = process_image(image)
-    
-    # Display the initial image with the lane lines marked out
-    plt.imshow(image_with_lane_lines)
-    plt.show()
+    for image_select in list_of_images:
+        #image_select = list_of_images[image_to_test]
+        image = mpimg.imread("./test_images/" + image_select)
+        image_name = os.path.splitext(image_select)[0]
+        print("Processing ",image_select)
+        # Run the image through the pipeline
+        image_with_lane_lines = process_image(image)
+        # Display the initial image with the lane lines marked out
+        #plt.imshow(image_with_lane_lines)
+        #plt.show()
+        mpimg.imsave("./test_images_output/"+image_name,image_with_lane_lines)
     
     """
     Process clip1
@@ -294,7 +298,7 @@ if __name__ == '__main__':
     """
     Process clip2
     """
-    process_clip2=True
+    process_clip2=False
     if process_clip2:
         clip2 = VideoFileClip("test_videos/solidYellowLeft.mp4")
         yellow_output = 'test_videos_output/solidYellowLeft.mp4'
