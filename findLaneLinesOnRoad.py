@@ -17,7 +17,8 @@ from moviepy.editor import VideoFileClip
 from IPython.display import HTML
 from dask.array.chunk import keepdims_wrapper
 
-
+global image_name
+global edges
 
 def grayscale(img):
     """Applies the Grayscale transform
@@ -131,8 +132,9 @@ def draw_lines(img, lines, color=[255, 0, 0], thickness=5):
         left_line_top_x = int(poly.polyval(left_min[1],left_line_poly))
         
         # Draw left line
+        #cv2.line(img, (left_min[0], left_min[1]), (left_max[0], left_max[1]), color, thickness
         cv2.line(img, (left_line_bottom_x, img.shape[0]), (left_line_top_x, left_min[1]), color, thickness)
-       
+         
     """
     Extract the right lane line points and draw it on the image
     """
@@ -155,7 +157,7 @@ def draw_lines(img, lines, color=[255, 0, 0], thickness=5):
         right_line_bottom_x = int(poly.polyval(img.shape[0], right_line_poly))
         right_line_top_x = int(poly.polyval(right_min[1], right_line_poly))
         # Draw right line
-        #cv2.line(img, (right_min[0], right_min[1]), (right_max[0], right_max[1]), color, thickness)
+        #cv2.line(img, (right_min[0], right_min[1]), (right_max[0], right_max[1]), color, thickness
         cv2.line(img, (right_line_bottom_x, img.shape[0]), (right_line_top_x, right_min[1]), color, thickness)            
 
 
@@ -165,9 +167,22 @@ def hough_lines(img, rho, theta, threshold, min_line_len, max_line_gap):
         
     Returns an image with hough lines drawn.
     """
-    lines = cv2.HoughLinesP(img, rho, theta, threshold, np.array([]), minLineLength=min_line_len, maxLineGap=max_line_gap)
+    lines = cv2.HoughLinesP(img, rho, theta, threshold, np.array([]), minLineLength=min_line_len, maxLineGap=max_line_gap) 
+
     line_img = np.zeros((img.shape[0], img.shape[1], 3), dtype=np.uint8)
+
+# create a color binar image to combine with the line image
+#     color_edges = np.dstack((img, img, img))
+#         # Iterate over the output "lines" and draw lines on the blank
+#     for line in lines:
+#         for x1,y1,x2,y2 in line:
+#             cv2.line(line_img,(x1,y1), (x2, y2), (255,0,0), 10)
+#     # Draw the lines on the edge image
+#     combo = cv2.addWeighted(color_edges, 0.8, line_img, 1, 0)
+#    mpimg.imsave("./test_images_output/"+image_name+"_houghLineP_raw_output",combo)  
+            
     draw_lines(line_img, lines)
+    
     return line_img
 
 # Python 3 has support for cool math symbols.
@@ -204,13 +219,15 @@ def process_image(image):
     """
     Grayscale the image
     """
-    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)  
+    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    #mpimg.imsave("./test_images_output/"+image_name+"_gray",gray)  
 
     """
     Define a kernel size and apply Gaussian smoothing
     """
     kernel_size = 3
     blur_gray = gaussian_blur(gray, kernel_size)
+    #mpimg.imsave("./test_images_output/"+image_name+"_blur_gray",blur_gray)  
 
     """
     Detect the edges in the image using Canny Edge Detection
@@ -220,6 +237,8 @@ def process_image(image):
     high_threshold = 200
     edges = canny(blur_gray, low_threshold, high_threshold)
     
+    #mpimg.imsave("./test_images_output/"+image_name+"_edges",edges)  
+    
     """
     Extract region of interest from the image
     Using a four sided polygon as a mask
@@ -227,6 +246,8 @@ def process_image(image):
     img_shape = edges.shape
     vertices = np.array([[(50,img_shape[0]),(450, 320), (550, 320), (900,img_shape[0])]], dtype=np.int32)
     masked_edges = region_of_interest(edges, vertices)
+    
+    #mpimg.imsave("./test_images_output/"+image_name+"_masked_edges",masked_edges)  
     
     assert(masked_edges.shape == img_shape)
     """
@@ -243,6 +264,7 @@ def process_image(image):
     # Run Hough on edge detected image
     line_image = hough_lines(masked_edges, rho, theta, threshold, min_line_length, max_line_gap)
     
+    #mpimg.imsave("./test_images_output/"+image_name+"_hough_line_image",line_image)
     """
     Overlay the line image on the original image and display the resulting image
     """
@@ -265,10 +287,9 @@ if __name__ == '__main__':
     Select test images to find lane lines by setting a value from 0-1
     Display the image with the lane lines overlayed on top
     """
-    i=0
+
     list_of_images = os.listdir("test_images")
     for image_select in list_of_images:
-        #image_select = list_of_images[image_to_test]
         image = mpimg.imread("./test_images/" + image_select)
         image_name = os.path.splitext(image_select)[0]
         print("Processing ",image_select)
@@ -281,6 +302,9 @@ if __name__ == '__main__':
     
     """
     Process clip1
+    
+    set the process_clip = True to run the pipeline on the specified video
+    Replace test_videos/solidWhiteRight.mp4 with the path to another video clip
     """
     process_clip1=False
     if process_clip1:
